@@ -10,7 +10,7 @@
 """
 from time import time
 from datetime import datetime, timedelta
-from base64 import b64encode, b64decode
+from base64 import b64encode
 
 from Crypto import Random
 from Crypto.Hash import SHA
@@ -26,8 +26,8 @@ class EELHVProvider(ProviderBase):
         IPizza
     KeyChain
         :class:`~.IPizzaKeyChain`
-    Supported return urls:
-        * ``return`` ``xml``
+    Supported return kwargs:
+        * ``xml`` ``response`` ``return`` ``email`` ``phone``
     Supported protocol version:
         * ``008``
     """
@@ -83,9 +83,9 @@ class EELHVProvider(ProviderBase):
 
         # Parse and validate date
         f = lambda x: form.get('VK_%s' % x)
-        time = time.strptime(f('DATETIME').split('+')[0], '%Y-%m-%dT%H:%M:%S')
+        t = time.strptime(f('DATETIME').split('+')[0], '%Y-%m-%dT%H:%M:%S')
 
-        if datetime.now() - timedelta(seconds=300) > time:
+        if datetime.now() - timedelta(seconds=300) > t:
             raise InvalidResponseError
 
         # Save hire response data
