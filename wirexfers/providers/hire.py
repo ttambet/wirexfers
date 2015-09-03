@@ -83,7 +83,7 @@ class EELHVProvider(ProviderBase):
 
         # Parse and validate date
         f = lambda x: form.get('VK_%s' % x)
-        t = time.strptime(f('DATETIME').split('+')[0], '%Y-%m-%dT%H:%M:%S')
+        t = datetime.strptime(f('DATETIME').split('+')[0], "%Y-%m-%dT%H:%M:%S")
 
         if datetime.now() - timedelta(seconds=300) > t:
             raise InvalidResponseError
