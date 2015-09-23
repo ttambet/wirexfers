@@ -97,5 +97,5 @@ class EELHVProvider(ProviderBase):
     def _build_mac(fields, data):
         """Build MAC string ('0045011003008') for required fields."""
         f = lambda x: data.get('VK_%s' % x)
-        return u''.join(map(lambda k: '%03d%s' % (len(f(k)), f(k)), fields))
+        return u''.join(map(lambda k: '%03d%s' % (len(f(k)), f(k)), fields)).encode('utf-8')
 
