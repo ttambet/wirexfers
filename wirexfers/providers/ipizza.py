@@ -19,7 +19,7 @@ from . import KeyChainBase, ProviderBase
 from .. import PaymentResponse
 from ..exc import InvalidResponseError
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 class IPizzaProviderBase(ProviderBase):
     """Base class for IPizza protocol provider.
