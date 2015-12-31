@@ -19,6 +19,8 @@ from . import KeyChainBase, ProviderBase
 from .. import PaymentResponse
 from ..exc import InvalidResponseError
 
+from datetime import datetime, timedelta
+
 class IPizzaProviderBase(ProviderBase):
     """Base class for IPizza protocol provider.
 
@@ -47,7 +49,7 @@ class IPizzaProviderBase(ProviderBase):
     def _sign_request(self, info, return_urls):
         """Create and sign payment request data."""
         # Basic fields
-        fields = [('VK_SERVICE', u'1002'),
+        fields = [('VK_SERVICE', u'1011'),
                   ('VK_VERSION', u'008'),
                   ('VK_SND_ID',  self.user),
                   ('VK_STAMP',   '%d' % int(time())),
@@ -200,7 +202,66 @@ class EESwedBankProvider(IPizzaProviderBase):
     Supported protocol version:
         * ``008``
     """
-    extra_fields = (('VK_ENCODING', 'UTF-8'),)
+
+    def _sign_request(self, info, return_urls):
+        """Create and sign payment request data."""
+        # Basic fields
+        fields = [('VK_SERVICE',  u'1012'),
+                  ('VK_VERSION',  u'008'),
+                  ('VK_SND_ID',   self.user),
+                  ('VK_STAMP',    '%d' % int(time())),
+                  ('VK_AMOUNT',   info.amount),
+                  ('VK_CURR',     u'EUR'),
+                  ('VK_DATETIME', datetime.now().replace(microsecond=0).isoformat() + '+0200'),
+                  ('VK_REF',      info.refnum),
+                  ('VK_MSG',      info.message)]
+
+        # Append return url field(s)
+        fields.append(('VK_RETURN', return_urls['return']))
+        fields.append(('VK_CANCEL', return_urls['cancel']))
+
+        ## MAC calculation for request 1002
+        m = self._build_mac(('SERVICE', 'VERSION', 'SND_ID', 'STAMP', \
+                             'AMOUNT', 'CURR', 'REF', 'MSG', 'RETURN', 'CANCEL', 'DATETIME'), dict(fields))
+        # Append mac fields
+        fields.append(('VK_MAC', b64encode( \
+                    PKCS1_v1_5.new(self.keychain.private_key)
+                              .sign(SHA.new(m)))))
+
+        return fields
+
+    def parse_response(self, form, success=True):
+        """Parse and return payment response."""
+        fields = {
+            # Successful payment
+            '1111': ('SERVICE', 'VERSION', 'SND_ID', 'REC_ID', 'STAMP', #  1..5
+                     'T_NO', 'AMOUNT', 'CURR', 'REC_ACC', 'REC_NAME',   #  6..10
+                     'SND_ACC', 'SND_NAME', 'REF', 'MSG', 'T_DATETIME'),# 11..15
+            # Unsuccessful payment
+            '1911': ('SERVICE', 'VERSION', 'SND_ID', 'REC_ID', 'STAMP', #  1..5
+                     'REF', 'MSG')                                      #  6..7
+        }
+        # See which response we got
+        resp = form.get('VK_SERVICE', None)
+        if not resp and resp not in fields:
+            raise InvalidResponseError
+        success = resp == '1111'
+
+        Random.atfork()
+
+        # Parse and validate MAC
+        m = self._build_mac(fields[resp], form)
+        f = lambda x: form.get('VK_%s' % x)
+        if not PKCS1_v1_5.new(self.keychain.public_key) \
+                         .verify(SHA.new(m), b64decode(f('MAC'))):
+            raise InvalidResponseError
+        # Save payment data
+        data = {}
+        if success:
+            for item in ('T_NO', 'AMOUNT', 'CURR', 'REC_ACC', 'REC_NAME',
+                         'SND_ACC', 'SND_NAME', 'REF', 'MSG', 'T_DATETIME'):
+                data[item] = f(item)
+        return PaymentResponse(self, data, success)
 
     @staticmethod
     def _build_mac(fields, data):
