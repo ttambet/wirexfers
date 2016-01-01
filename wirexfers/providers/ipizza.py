@@ -49,46 +49,46 @@ class IPizzaProviderBase(ProviderBase):
     def _sign_request(self, info, return_urls):
         """Create and sign payment request data."""
         # Basic fields
-        fields = [('VK_SERVICE', u'1011'),
-                  ('VK_VERSION', u'008'),
-                  ('VK_SND_ID',  self.user),
-                  ('VK_STAMP',   '%d' % int(time())),
-                  ('VK_AMOUNT',  info.amount),
-                  ('VK_CURR',    u'EUR'),
-                  ('VK_REF',     info.refnum),
-                  ('VK_MSG',     info.message)]
+        fields = [('VK_SERVICE',  u'1012'),
+                  ('VK_VERSION',  u'008'),
+                  ('VK_SND_ID',   self.user),
+                  ('VK_STAMP',    '%d' % int(time())),
+                  ('VK_AMOUNT',   info.amount),
+                  ('VK_CURR',     u'EUR'),
+                  ('VK_DATETIME', datetime.now().replace(microsecond=0).isoformat() + '+0200'),
+                  ('VK_REF',      info.refnum),
+                  ('VK_MSG',      info.message)]
 
-        # Check whether provider supplies extra fields
-        if hasattr(self, 'extra_fields'):
-            fields.extend(self.extra_fields)
+        # Append return url field(s)
+        fields.append(('VK_RETURN', return_urls['return']))
+        fields.append(('VK_CANCEL', return_urls['cancel']))
 
-        ## MAC calculation for request 1002
+        ## MAC calculation for request 1012
         m = self._build_mac(('SERVICE', 'VERSION', 'SND_ID', 'STAMP', \
-                             'AMOUNT', 'CURR', 'REF', 'MSG'), dict(fields))
+                             'AMOUNT', 'CURR', 'REF', 'MSG', 'RETURN', 'CANCEL', 'DATETIME'), dict(fields))
         # Append mac fields
         fields.append(('VK_MAC', b64encode( \
                     PKCS1_v1_5.new(self.keychain.private_key)
                               .sign(SHA.new(m)))))
-        # Append return url field(s)
-        fields.append(('VK_RETURN', return_urls['return']))
+
         return fields
 
     def parse_response(self, form, success=True):
         """Parse and return payment response."""
         fields = {
             # Successful payment
-            '1101': ('SERVICE', 'VERSION', 'SND_ID', 'REC_ID', 'STAMP', #  1..5
+            '1111': ('SERVICE', 'VERSION', 'SND_ID', 'REC_ID', 'STAMP', #  1..5
                      'T_NO', 'AMOUNT', 'CURR', 'REC_ACC', 'REC_NAME',   #  6..10
-                     'SND_ACC', 'SND_NAME', 'REF', 'MSG', 'T_DATE'),    # 11..15
+                     'SND_ACC', 'SND_NAME', 'REF', 'MSG', 'T_DATETIME'),# 11..15    
             # Unsuccessful payment
-            '1901': ('SERVICE', 'VERSION', 'SND_ID', 'REC_ID', 'STAMP', #  1..5
+            '1911': ('SERVICE', 'VERSION', 'SND_ID', 'REC_ID', 'STAMP', #  1..5
                      'REF', 'MSG')                                      #  6..7
         }
         # See which response we got
         resp = form.get('VK_SERVICE', None)
         if not resp and resp not in fields:
             raise InvalidResponseError
-        success = resp == '1101'
+        success = resp == '1111'
 
         Random.atfork()
 
@@ -102,7 +102,7 @@ class IPizzaProviderBase(ProviderBase):
         data = {}
         if success:
             for item in ('T_NO', 'AMOUNT', 'CURR', 'REC_ACC', 'REC_NAME',
-                         'SND_ACC', 'SND_NAME', 'REF', 'MSG', 'T_DATE'):
+                         'SND_ACC', 'SND_NAME', 'REF', 'MSG', 'T_DATETIME'):
                 data[item] = f(item)
         return PaymentResponse(self, data, success)
 
@@ -110,7 +110,7 @@ class IPizzaProviderBase(ProviderBase):
     def _build_mac(fields, data):
         """Build MAC string ('003one003two') for required fields."""
         f = lambda x: data.get('VK_%s' % x)
-        return u''.join(map(lambda k: '%03d%s' % (len(f(k).encode('utf-8')), f(k)), fields)).encode('utf-8')
+        return u''.join(map(lambda k: '%03d%s' % (len(f(k)), f(k)), fields)).encode('utf-8')
 
 class EEDanskeProvider(IPizzaProviderBase):
     """
@@ -171,6 +171,7 @@ class EELHVProvider(IPizzaProviderBase):
         * ``008``
     """
     extra_fields = (('VK_CHARSET', 'UTF-8'),)
+
 
 class EESEBProvider(IPizzaProviderBase):
     """
