@@ -59,6 +59,10 @@ class IPizzaProviderBase(ProviderBase):
                   ('VK_REF',      info.refnum),
                   ('VK_MSG',      info.message)]
 
+        # Check whether provider supplies extra fields
+        if hasattr(self, 'extra_fields'):
+            fields.extend(self.extra_fields)
+
         # Append return url field(s)
         fields.append(('VK_RETURN', return_urls['return']))
         fields.append(('VK_CANCEL', return_urls['cancel']))
@@ -203,6 +207,7 @@ class EESwedBankProvider(IPizzaProviderBase):
     Supported protocol version:
         * ``008``
     """
+    extra_fields = (('VK_CHARSET', 'UTF-8'),)
 
     def _sign_request(self, info, return_urls):
         """Create and sign payment request data."""
@@ -216,6 +221,10 @@ class EESwedBankProvider(IPizzaProviderBase):
                   ('VK_DATETIME', datetime.now().replace(microsecond=0).isoformat() + '+0200'),
                   ('VK_REF',      info.refnum),
                   ('VK_MSG',      info.message)]
+
+        # Check whether provider supplies extra fields
+        if hasattr(self, 'extra_fields'):
+            fields.extend(self.extra_fields)
 
         # Append return url field(s)
         fields.append(('VK_RETURN', return_urls['return']))
