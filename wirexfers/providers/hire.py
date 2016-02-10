@@ -3,7 +3,7 @@
     wirexfers.protocols.hire
     ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    LHV hire panklink implementations.
+    LHV hire banklink implementations.
 
     :copyright: (c) 2015, Timo Tambet
     :license: ISC, see LICENSE for more details.
