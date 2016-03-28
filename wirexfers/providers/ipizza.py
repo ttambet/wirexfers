@@ -55,7 +55,7 @@ class IPizzaProviderBase(ProviderBase):
                   ('VK_STAMP',    '%d' % int(time())),
                   ('VK_AMOUNT',   info.amount),
                   ('VK_CURR',     u'EUR'),
-                  ('VK_DATETIME', datetime.now().replace(microsecond=0).isoformat() + '+0200'),
+                  ('VK_DATETIME', datetime.now().replace(microsecond=0).isoformat() + '+0300'),
                   ('VK_REF',      info.refnum),
                   ('VK_MSG',      info.message)]
 
@@ -103,7 +103,7 @@ class IPizzaProviderBase(ProviderBase):
                          .verify(SHA.new(m), b64decode(f('MAC'))):
             raise InvalidResponseError
 
-        timestamp = datetime.strptime(f('T_DATETIME'), '%Y-%m-%dT%H:%M:%S+0200')
+        timestamp = datetime.strptime(f('T_DATETIME'), '%Y-%m-%dT%H:%M:%S+0300')
         now = datetime.now()
         if timestamp > (now + timedelta(seconds=300)) or timestamp < (now - timedelta(seconds=300)):
             raise Exception('Response outdated.')
