@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
     wirexfers.protocols.hire
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~
 
     LHV hire banklink implementations.
 
