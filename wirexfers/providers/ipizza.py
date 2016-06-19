@@ -20,6 +20,7 @@ from .. import PaymentResponse
 from ..exc import InvalidResponseError
 
 from datetime import datetime, timedelta
+import time
 
 class IPizzaProviderBase(ProviderBase):
     """Base class for IPizza protocol provider.
@@ -55,7 +56,7 @@ class IPizzaProviderBase(ProviderBase):
                   ('VK_STAMP',    '%d' % int(time())),
                   ('VK_AMOUNT',   info.amount),
                   ('VK_CURR',     u'EUR'),
-                  ('VK_DATETIME', datetime.now().replace(microsecond=0).isoformat() + '+0300'),
+                  ('VK_DATETIME', time.strftime('%Y-%m-%dT%H:%M:%S%z')),
                   ('VK_REF',      info.refnum),
                   ('VK_MSG',      info.message)]
 
