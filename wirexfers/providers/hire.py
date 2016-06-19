@@ -5,7 +5,7 @@
 
     LHV hire banklink implementations.
 
-    :copyright: (c) 2015, Timo Tambet
+    :copyright: (c) 2016, Timo Tambet
     :license: ISC, see LICENSE for more details.
 """
 from datetime import datetime, timedelta
@@ -21,7 +21,7 @@ from .. import PaymentResponse
 from ..exc import InvalidResponseError
 
 class EELHVProvider(ProviderBase):
-    """LHV IPizza hire panklink provider.
+    """LHV IPizza hire banklink provider.
     Protocol
         IPizza
     KeyChain
