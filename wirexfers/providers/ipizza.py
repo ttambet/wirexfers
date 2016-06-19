@@ -8,7 +8,6 @@
     :copyright: (c) 2012-2014, Priit Laes
     :license: ISC, see LICENSE for more details.
 """
-from time import time
 from base64 import b64encode, b64decode
 
 from Crypto import Random
@@ -53,7 +52,7 @@ class IPizzaProviderBase(ProviderBase):
         fields = [('VK_SERVICE',  u'1012'),
                   ('VK_VERSION',  u'008'),
                   ('VK_SND_ID',   self.user),
-                  ('VK_STAMP',    '%d' % int(time())),
+                  ('VK_STAMP',    '%d' % int(time.time())),
                   ('VK_AMOUNT',   info.amount),
                   ('VK_CURR',     u'EUR'),
                   ('VK_DATETIME', time.strftime('%Y-%m-%dT%H:%M:%S%z')),
@@ -233,5 +232,3 @@ class EENordeaProvider(IPizzaProviderBase):
         * ``008``
     """
     extra_fields = (('VK_ENCODING', 'UTF-8'),)
-
-

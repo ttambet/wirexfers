@@ -8,9 +8,9 @@
     :copyright: (c) 2015, Timo Tambet
     :license: ISC, see LICENSE for more details.
 """
-from time import time
 from datetime import datetime, timedelta
 from base64 import b64encode
+import time
 
 from Crypto import Random
 from Crypto.Hash import SHA
@@ -49,12 +49,12 @@ class EELHVProvider(ProviderBase):
         fields = [('VK_SERVICE',  u'5011'),
                   ('VK_VERSION',  u'008'),
                   ('VK_SND_ID',   self.user),
-                  ('VK_REC_ID',   'LHV'), 
-                  ('VK_STAMP',    '%d' % int(time())),
+                  ('VK_REC_ID',   'LHV'),
+                  ('VK_STAMP',    '%d' % int(time.time())),
                   ('VK_DATA',     kwargs['xml']),
                   ('VK_RESPONSE', kwargs['response']),
                   ('VK_RETURN',   kwargs['return']),
-                  ('VK_DATETIME', datetime.now().replace(microsecond=0).isoformat() + '+02:00'),
+                  ('VK_DATETIME', time.strftime('%Y-%m-%dT%H:%M:%S%z')),
                   ('VK_EMAIL',    kwargs.get('email', '')),
                   ('VK_PHONE',    kwargs.get('phone', ''))]
 
@@ -98,4 +98,3 @@ class EELHVProvider(ProviderBase):
         """Build MAC string ('0045011003008') for required fields."""
         f = lambda x: data.get('VK_%s' % x)
         return u''.join(map(lambda k: '%03d%s' % (len(f(k)), f(k)), fields)).encode('utf-8')
-
