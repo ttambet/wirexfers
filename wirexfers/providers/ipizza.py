@@ -17,9 +17,12 @@ from Crypto.Signature import PKCS1_v1_5
 from . import KeyChainBase, ProviderBase
 from .. import PaymentResponse
 from ..exc import InvalidResponseError
+import requests
 
 from datetime import datetime, timedelta
 import time
+from dateutil.parser import parse
+import pytz
 
 class IPizzaProviderBase(ProviderBase):
     """Base class for IPizza protocol provider.
@@ -69,7 +72,8 @@ class IPizzaProviderBase(ProviderBase):
 
         ## MAC calculation for request 1012
         m = self._build_mac(('SERVICE', 'VERSION', 'SND_ID', 'STAMP', \
-                             'AMOUNT', 'CURR', 'REF', 'MSG', 'RETURN', 'CANCEL', 'DATETIME'), dict(fields))
+                             'AMOUNT', 'CURR', 'REF', 'MSG', 'RETURN', \
+                             'CANCEL', 'DATETIME'), dict(fields))
         # Append mac fields
         fields.append(('VK_MAC', b64encode( \
                     PKCS1_v1_5.new(self.keychain.private_key)
@@ -103,10 +107,17 @@ class IPizzaProviderBase(ProviderBase):
                          .verify(SHA.new(m), b64decode(f('MAC'))):
             raise InvalidResponseError
 
-        timestamp = datetime.strptime(f('T_DATETIME'), '%Y-%m-%dT%H:%M:%S+0300')
-        now = datetime.now()
-        if timestamp > (now + timedelta(seconds=300)) or timestamp < (now - timedelta(seconds=300)):
-            raise Exception('Response outdated.')
+        # Parse reponse
+        d = parse(f('T_DATETIME')).astimezone(pytz.utc)
+
+        # Current time (UTC)
+        now = datetime.now(pytz.utc)
+
+        # Timedelta 5 min
+        td = timedelta(seconds=300)
+        if not ((now - td) < d < (now + td)):
+            # FIXME: Python 3 should support Timeout exception
+            raise requests.exceptions.Timeout
 
         # Save payment data
         data = {}
@@ -120,7 +131,8 @@ class IPizzaProviderBase(ProviderBase):
     def _build_mac(fields, data):
         """Build MAC string ('003one003two') for required fields."""
         f = lambda x: data.get('VK_%s' % x)
-        return u''.join(map(lambda k: '%03d%s' % (len(f(k)), f(k)), fields)).encode('utf-8')
+        return u''.join(map(lambda k: '%03d%s' % (len(f(k)),
+            f(k)), fields)).encode('utf-8')
 
 class EEDanskeProvider(IPizzaProviderBase):
     """
